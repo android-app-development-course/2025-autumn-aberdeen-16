@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkillSwap Hub - 移动互助平台</title>
+    <style>
+        :root { --main-blue: #007AFF; }
+        body { font-family: -apple-system, sans-serif; background: #f2f2f7; margin: 0; display: none; }
+        .pc-error { display: none; text-align: center; padding: 50px; color: #666; }
+        .app-container { padding: 20px; }
+        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .coin-display { background: linear-gradient(135deg, #007AFF, #5856D6); color: white; text-align: center; }
+        .btn-search { background: var(--main-blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .user-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; }
+        .dist-tag { color: var(--main-blue); font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="pc-view" class="pc-error">
+        <h1>📱 仅限手机访问</h1>
+        <p>检测到您正在使用电脑。为了使用 LBS 定位功能，请通过手机浏览器扫描或打开此链接。</p>
+    </div>
+
+    <div id="mobile-view" class="app-container">
+        <div class="card coin-display">
+            <div style="font-size: 14px; opacity: 0.9;">我的时间币</div>
+            <div style="font-size: 32px; font-weight: 800; margin: 5px 0;">4.5 <small style="font-size: 14px;">Hours</small></div>
+            <div id="gps-status" style="font-size: 11px;">📡 正在请求 GPS 权限...</div>
+        </div>
+
+        <div class="card">
+            <h3>📍 附近的技能交换者</h3>
+            <button class="btn-search" onclick="findNearby()">智能匹配附近用户</button>
+            <div id="results-list" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 1. 设备检测逻辑
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (!isMobile) {
+            document.getElementById('pc-view').style.display = 'block';
+        } else {
+            document.body.style.display = 'block';
+            initApp();
+        }
+
+        // 2. 智能硬件调用 (GPS)
+        function initApp() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    document.getElementById('gps-status').innerText = "✅ 手机位置已锁定";
+                }, err => {
+                    document.getElementById('gps-status').innerText = "❌ 请在手机设置中开启位置权限";
+                });
+            }
+        }
+
+        // 3. 异步云端匹配
+        async function findNearby() {
+            const listDiv = document.getElementById('results-list');
+            listDiv.innerHTML = "正在连接云端服务器...";
+            
+            try {
+                const response = await fetch('/api');
+                const result = await response.json();
+                
+                listDiv.innerHTML = "";
+                result.data.forEach(user => {
+                    listDiv.innerHTML += `
+                        <div class="user-item">
+                            <div>
+                                <strong>${user.name}</strong><br>
+                                <small style="color:#666">${user.skill}</small>
+                            </div>
+                            <div class="dist-tag">${user.distance}</div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                listDiv.innerHTML = "❌ 无法连接到 Firebase 云函数";
+            }
+        }
+    </script>
+</body>
+</html>
